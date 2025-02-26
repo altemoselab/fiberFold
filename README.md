@@ -48,16 +48,17 @@ To generate phased Hi-C maps, phase Fiber-seq reads prior to the first step.
         --n_feat 4
         --model model.ckpt
         --hic <hic_directory/>
-  note that Hi-C data must be processed in npz format (can use [cool2npy.py](https://github.com/tanjimin/C.Origami/blob/main/src/corigami/preprocessing/cool2npy.py)), and stored in chromsome specific .npz files, analagous to the bigWigs described above.  
+  note that Hi-C data must be processed in npz format (can use [cool2npy.py](https://github.com/tanjimin/C.Origami/blob/main/src/corigami/preprocessing/cool2npy.py)), and stored in chromsome specific .npz files, analagous to the bigWigs described above.
   
-  To predict:  
+  To predict:   
+    
       python3 predict.py 
-      --<model_path>
-      --mA <fire/>
-      --mC <cpg/>
-      --ctcf_fp <ctcf_footprint>
-      --ctcf_dir <ctcf_motif_direction>
-
+        --<model_path>
+        --mA <fire/>
+        --mC <cpg/>
+        --ctcf_fp <ctcf_footprint>
+        --ctcf_dir <ctcf_motif_direction>
+        --ds <intervals_to_predict.bed>
 
 
   
