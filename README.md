@@ -2,9 +2,12 @@
   
 ### First, generate bigWigs of FIRE, mCpG, CTCF footprinting, and CTCF motif direction.  
   [pb-CpG-tools](https://github.com/PacificBiosciences/pb-CpG-tools) for generating CpG (default on PacBio output)  
-  [fiberTools](https://github.com/fiberseq/fibertools-rs) FIRE for generating accessible regulatory element track  
-  [fiberTools](https://github.com/fiberseq/fibertools-rs) footprint for generating CTCF footprinting information, followed by misc/encodeFP.py + misc/filterOverlapMotif.py. CTCF Motif to use: MA0139.1.  
-  misc/encodeMotifDirection.py to encode CTCF motif directionality.   
+  [fibertools](https://github.com/fiberseq/fibertools-rs) FIRE for generating accessible regulatory element track  
+  [fibertools](https://github.com/fiberseq/fibertools-rs) footprint for generating CTCF footprinting information, CTCF Motif to use: MA0139.1.  
+  [filterOverlapMotif.py](https://github.com/altemoselab/fiberFold/blob/main/misc/filterOverlapMotifs.py) will filter out overlapping motif based on score.  
+  [encodeFP.py](https://github.com/altemoselab/fiberFold/blob/main/misc/encodeFP.py) will create a bigWig track from fibertools footprint output.  
+  [encodeMotifDirection.py](https://github.com/altemoselab/fiberFold/blob/main/misc/encodeMotifDirection.py) will create a bigWig indicating CTCF motif direction.  
+
   
   All tracks should be divided by depth to be in range 0-1.
    
