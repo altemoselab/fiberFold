@@ -10,6 +10,7 @@
 
   
   All tracks should be divided by depth to be in range 0-1.
+  To generate phased Hi-C maps, phase Fiber-seq reads prior to the steps above.
    
 ### Second, split these data by chromsosome and store all chroms from a single feature track in a directory.  
   Example directory structure should look like (in file_prefix.bw, file prefix must be chromosome name):  
@@ -36,8 +37,6 @@
   Must be 2097152 bases long interval, organized as a bed file. Can use [bedtools](https://github.com/arq5x/bedtools2) makewindows to do this across a genomic interval.
   
 ### Fourth, predict with predict.py or alternatively, train a model with main.py.   
-  
-To generate phased Hi-C maps, phase Fiber-seq reads prior to the first step.  
 
   To train:
   
@@ -54,14 +53,16 @@ To generate phased Hi-C maps, phase Fiber-seq reads prior to the first step.
   note that Hi-C data must be processed in npz format (can use [cool2npy.py](https://github.com/tanjimin/C.Origami/blob/main/src/corigami/preprocessing/cool2npy.py)), and stored in chromsome specific .npz files, analagous to the bigWigs described above.
   
   To predict:   
-    
+      To download model from our preprint: [FiberFold_GM12878_PacBio_model](https://us-west-1.console.aws.amazon.com/s3/object/altemoselab-share?region=us-west-1&bucketType=general&prefix=fiberFold/model.ckpt)
+      
       python3 predict.py 
-        --<model_path>
+        --model <model_path> 
         --mA <fire/>
         --mC <cpg/>
         --ctcf_fp <ctcf_footprint>
         --ctcf_dir <ctcf_motif_direction>
         --ds <intervals_to_predict.bed>
+    
 
 
   
