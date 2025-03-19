@@ -1,5 +1,19 @@
 ## FiberFold enables the prediction of Hi-C maps (2MB window, 10kb resolution) from a single assay, Fiber-seq (PacBio).  
-  
+
+### Dependencies
+
+We've provided a .yml file to install the necessary environment, but if you are having issues you can install and use these dependencies.
+
+    pyfaidx
+    pybigwig
+    CUDA v12.1
+    cuDNN v8.9
+    torch==2.2.2+cu121
+    torchmetrics==1.3.2
+    torchvision==0.17.2
+    pytorch-lightning==1.9.5
+
+    
 ### First, generate bigWigs of FIRE, mCpG, CTCF footprinting, and CTCF motif direction.  
   [pb-CpG-tools](https://github.com/PacificBiosciences/pb-CpG-tools) for generating CpG (default on PacBio output)  
   [fibertools](https://github.com/fiberseq/fibertools-rs) FIRE for generating accessible regulatory element track  
