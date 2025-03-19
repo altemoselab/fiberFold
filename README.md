@@ -79,8 +79,16 @@ We've provided a .yml file to install the necessary environment, but if you are 
         --ctcf_fp <ctcf_footprint>
         --ctcf_dir <ctcf_motif_direction>
         --ds <intervals_to_predict.bed>
-    
 
+To view predictions:
+        
+        with open('predict_out.pkl','rb') as handle :
+            predicted_maps = pickle.load(handle)
+        for x in predicted_maps:
+            plt.imshow(x[0][0],cmap = 'magma_r', vmin = 0, vmax = 5)
+            plt.show() 
+
+![image](https://github.com/user-attachments/assets/cea076f3-dd01-4733-a69d-6c8352bba484)
 
   
 ### Acknowledgements:  
