@@ -51,9 +51,12 @@
         --model model.ckpt
         --hic <hic_directory/>
   note that Hi-C data must be processed in npz format (can use [cool2npy.py](https://github.com/tanjimin/C.Origami/blob/main/src/corigami/preprocessing/cool2npy.py)), and stored in chromsome specific .npz files, analagous to the bigWigs described above.
-  
+        
+  To download model from our preprint:  
+
+      wget https://us-west-1.console.aws.amazon.com/s3/object/altemoselab-share?region=us-west-1&bucketType=general&prefix=fiberFold/model.ckpt
+      
   To predict:   
-      To download model from our preprint: [FiberFold_GM12878_PacBio_model](https://us-west-1.console.aws.amazon.com/s3/object/altemoselab-share?region=us-west-1&bucketType=general&prefix=fiberFold/model.ckpt)
       
       python3 predict.py 
         --model <model_path> 
