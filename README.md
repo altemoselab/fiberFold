@@ -88,7 +88,8 @@ To view predictions:
             plt.imshow(x[0][0],cmap = 'magma_r', vmin = 0, vmax = 5)
             plt.show() 
 
-![image](https://github.com/user-attachments/assets/cea076f3-dd01-4733-a69d-6c8352bba484)
+![image](https://github.com/user-attachments/assets/7db23e82-644a-473c-bd6e-60b4177c0696)
+
 
   
 ### Acknowledgements:  
