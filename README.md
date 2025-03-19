@@ -3,7 +3,7 @@
 ### Dependencies
 
 We've provided a .yml file to install the necessary environment, but if you are having issues you can install and use these dependencies.
-
+    python 3.11.8
     pyfaidx
     pybigwig
     CUDA v12.1
