@@ -14,7 +14,7 @@ def main():
     init_training(args)
 
 def init_parser():
-  parser = argparse.ArgumentParser(description='C.Origami Training Module.')
+  parser = argparse.ArgumentParser(description='FiberFold Training Module.')
 
   # Data and Run Directories
   parser.add_argument('--seed', dest='run_seed', default=2806,
