@@ -106,7 +106,7 @@ class Discriminator(nn.Module):
         return x
 
     def loss(self, pred, label, reduction='mean'):
-        return F.binary_cross_entropy_with_logits(pred, label, reduction=reduction)
+        return nn.binary_cross_entropy_with_logits(pred, label, reduction=reduction)
 
 
 
