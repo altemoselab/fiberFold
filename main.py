@@ -319,23 +319,21 @@ class GANModule(pl.LightningModule):
             'val_disc_conf_fake': fake_score,
         }, prog_bar=True)
         return mse_loss
+    
     def configure_optimizers(self):
         opt_g = torch.optim.Adam(self.generator.parameters(), lr=4e-4)
         opt_d = torch.optim.Adam(self.discriminator.parameters(), lr=4e-4)
 
-        scheduler_g = {
-            "scheduler": LinearWarmupCosineAnnealingLR(opt_g, warmup_epochs=10, max_epochs=120),
-            "interval": "epoch",
-            "name": "gen_lr"
-        }
-        scheduler_d = {
-            "scheduler": LinearWarmupCosineAnnealingLR(opt_d, warmup_epochs=10, max_epochs=120),
-            "interval": "epoch",
-            "name": "disc_lr"
-        }
+        # Get schedulers (they return dicts that include the 'optimizer' key)
+        sched_g = LinearWarmupCosineAnnealingLR(opt_g, warmup_epochs=10, max_epochs=120)
+        sched_d = LinearWarmupCosineAnnealingLR(opt_d, warmup_epochs=10, max_epochs=120)
 
-        return [opt_g, opt_d], [scheduler_g, scheduler_d]
-    
+        # Explicitly remove the 'optimizer' key — required for manual optimization
+        sched_g_config = {k: v for k, v in sched_g.items() if k != 'optimizer'}
+        sched_d_config = {k: v for k, v in sched_d.items() if k != 'optimizer'}
+
+        return [opt_g, opt_d], [sched_g_config, sched_d_config]
+        
     def get_model(self, args):
         model_name = 'ConvTransModel' 
         num_genomic_features = int(args.n_feat)
