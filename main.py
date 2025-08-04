@@ -351,15 +351,28 @@ class GANModule(pl.LightningModule):
 
     def get_dataloader(self, args, mode):
         dataset = self.get_dataset(args, mode)
-        return DataLoader(
+
+        if mode == 'train':
+            shuffle = True
+        else: # validation and test settings
+            shuffle = False
+        
+        #### SET BATCH SIZE
+        batch_size = 8
+        num_workers = 8
+
+
+        dataloader = torch.utils.data.DataLoader(
             dataset,
-            shuffle=(mode == 'train'),
-            batch_size=8,
-            num_workers=8,
+            shuffle=shuffle,
+            batch_size=batch_size,
+
+            num_workers=num_workers,
             pin_memory=True,
             prefetch_factor=1,
             persistent_workers=True
         )
+        return dataloader
 
 if __name__ == '__main__':
     main()
