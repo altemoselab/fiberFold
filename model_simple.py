@@ -101,12 +101,12 @@ class Discriminator(nn.Module):
 
         x = self.conv4(x)
         x = self.act4(x)
-        x = x.view(x.size(0), -1)  # NOTE: corrected from (1, -1) to (B, -1)
+        x = x.view(x.size(0), -1) 
         x = self.fc1(x)
         return x
 
     def loss(self, pred, label, reduction='mean'):
-        return nn.binary_cross_entropy_with_logits(pred, label, reduction=reduction)
+        return nn.functional.binary_cross_entropy_with_logits(pred, label, reduction=reduction)
 
 
 

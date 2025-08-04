@@ -83,7 +83,7 @@ def init_training(args):
                             callbacks = [early_stop_callback,
                                          checkpoint_callback,
                                          lr_monitor],
-                            max_epochs = 120, fast_dev_run=True) # fast_dev_run to see if model will initialize, remove when running entire model
+                            max_epochs = 120) # fast_dev_run to see if model will initialize, remove when running entire model
 
     trainloader = pl_module.get_dataloader(args, 'train')
     valloader = pl_module.get_dataloader(args, 'val')
@@ -270,7 +270,7 @@ class GANModule(pl.LightningModule):
             labels = torch.cat([torch.ones_like(real_disc), torch.zeros_like(fake_disc)], dim=0)
             preds = torch.cat([real_disc, fake_disc], dim=0)
 
-            disc_loss = torch.nn.binary_cross_entropy_with_logits(preds, labels)
+            disc_loss = torch.nn.functional.binary_cross_entropy_with_logits(preds, labels)
 
             self.manual_backward(disc_loss)
             opt_d.step()
@@ -284,11 +284,11 @@ class GANModule(pl.LightningModule):
             opt_g.zero_grad()
 
             # Full-resolution MSE loss
-            mse_loss = torch.nn.mse_loss(fake, real)
+            mse_loss = torch.nn.functional.mse_loss(fake, real)
 
             # Adversarial loss on 64x64 diagonal crop
             disc_out = self.discriminator(fake_crop.unsqueeze(1))
-            adv_loss = torch.nn.binary_cross_entropy_with_logits(disc_out, torch.ones_like(disc_out))
+            adv_loss = torch.nn.functional.binary_cross_entropy_with_logits(disc_out, torch.ones_like(disc_out))
 
             gen_loss = (self.lambda_adv * mse_loss) + ((1 - self.lambda_adv) * adv_loss)
 
@@ -307,7 +307,7 @@ class GANModule(pl.LightningModule):
             labels = torch.cat([torch.ones_like(real_disc), torch.zeros_like(fake_disc)], dim=0)
             preds = torch.cat([real_disc, fake_disc], dim=0)
 
-            disc_loss = torch.nn.binary_cross_entropy_with_logits(preds, labels)
+            disc_loss = torch.nn.functional.binary_cross_entropy_with_logits(preds, labels)
 
             self.manual_backward(disc_loss)
             opt_d.step()
@@ -319,7 +319,7 @@ class GANModule(pl.LightningModule):
                 'train_adv_loss': adv_loss,
             }, prog_bar=True)
 
-            
+
     def validation_step(self, batch, batch_idx):
         inputs, mat = self.proc_batch(batch)
         fake = self(inputs)
