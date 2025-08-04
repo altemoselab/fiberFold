@@ -246,66 +246,80 @@ class GANModule(pl.LightningModule):
         features, mat, _ = batch
         return features, mat
 
-    def training_step(self, batch, batch_idx):
-        opt_g, opt_d = self.optimizers()
-        inputs, real = self.proc_batch(batch)
+def training_step(self, batch, batch_idx):
+    opt_g, opt_d = self.optimizers()
+    inputs, real = self.proc_batch(batch)  # real: (B, 256, 256)
 
-        if self.current_epoch < 10:
-            # Warm-up: only update discriminator
-            fake = self.generator(inputs)
-            opt_d.zero_grad()
-            real_disc = self.discriminator(real.unsqueeze(1))
-            fake_disc = self.discriminator(fake.detach().unsqueeze(1))
-            labels = torch.cat([torch.ones_like(real_disc), torch.zeros_like(fake_disc)], dim=0)
-            preds = torch.cat([real_disc, fake_disc], dim=0)
-            disc_loss = torch.nn.binary_cross_entropy_with_logits(preds, labels)
-            self.manual_backward(disc_loss)
-            opt_d.step()
-            self.log('train_disc_loss', disc_loss, prog_bar=True)
-            
+    # Generator prediction (full 256x256)
+    fake = self.generator(inputs)  # fake: (B, 256, 256)
 
+    # Random diagonal-aligned crop index
+    i = torch.randint(0, 256 - 64 + 1, (1,)).item()
 
-        else:
-            fake = self.generator(inputs)
-            B, H, W = real.shape
+    # Crop 64x64 along diagonal
+    real_crop = real[:, i:i+64, i:i+64]      # (B, 64, 64)
+    fake_crop = fake[:, i:i+64, i:i+64]      # (B, 64, 64)
 
-            # ----------------------
-            #  Generator step
-            # ----------------------
-            opt_g.zero_grad()
+    if self.current_epoch < 10:
+        # Only train discriminator
+        opt_d.zero_grad()
 
-            mse_loss = torch.nn.mse_loss(fake, real)
-            disc_out = self.discriminator(fake.unsqueeze(1))  # (B,1,H,W) → logits
-            adv_loss = torch.nn.binary_cross_entropy_with_logits(disc_out, torch.ones_like(disc_out))
-            gen_loss = (self.lambda_adv * mse_loss) + ((1 - self.lambda_adv) * adv_loss)
+        real_disc = self.discriminator(real_crop.unsqueeze(1))           # (B, 1, 64, 64)
+        fake_disc = self.discriminator(fake_crop.detach().unsqueeze(1)) # (B, 1, 64, 64)
 
-            self.manual_backward(gen_loss)
-            torch.nn.utils.clip_grad_norm_(self.generator.parameters(), max_norm=1.0)
-            opt_g.step()
+        labels = torch.cat([torch.ones_like(real_disc), torch.zeros_like(fake_disc)], dim=0)
+        preds = torch.cat([real_disc, fake_disc], dim=0)
 
-            # ----------------------
-            #  Discriminator step
-            # ----------------------
-            opt_d.zero_grad()
+        disc_loss = torch.nn.binary_cross_entropy_with_logits(preds, labels)
 
-            real_disc = self.discriminator(real.unsqueeze(1))
-            fake_disc = self.discriminator(fake.detach().unsqueeze(1))
+        self.manual_backward(disc_loss)
+        opt_d.step()
 
-            labels = torch.cat([torch.ones_like(real_disc), torch.zeros_like(fake_disc)], dim=0)
-            preds = torch.cat([real_disc, fake_disc], dim=0)
+        self.log('train_disc_loss', disc_loss, prog_bar=True)
 
-            disc_loss = self.discriminator.loss(preds, labels)
+    else:
+        # ----------------------
+        #  Generator step
+        # ----------------------
+        opt_g.zero_grad()
 
-            self.manual_backward(disc_loss)
-            opt_d.step()
+        # Full-resolution MSE loss
+        mse_loss = torch.nn.mse_loss(fake, real)
 
-            self.log_dict({
-                'train_gen_loss': gen_loss,
-                'train_disc_loss': disc_loss,
-                'train_mse_loss': mse_loss,
-                'train_adv_loss': adv_loss,
-            }, prog_bar=True)
+        # Adversarial loss on 64x64 diagonal crop
+        disc_out = self.discriminator(fake_crop.unsqueeze(1))
+        adv_loss = torch.nn.binary_cross_entropy_with_logits(disc_out, torch.ones_like(disc_out))
 
+        gen_loss = (self.lambda_adv * mse_loss) + ((1 - self.lambda_adv) * adv_loss)
+
+        self.manual_backward(gen_loss)
+        torch.nn.utils.clip_grad_norm_(self.generator.parameters(), max_norm=1.0)
+        opt_g.step()
+
+        # ----------------------
+        #  Discriminator step
+        # ----------------------
+        opt_d.zero_grad()
+
+        real_disc = self.discriminator(real_crop.unsqueeze(1))
+        fake_disc = self.discriminator(fake_crop.detach().unsqueeze(1))
+
+        labels = torch.cat([torch.ones_like(real_disc), torch.zeros_like(fake_disc)], dim=0)
+        preds = torch.cat([real_disc, fake_disc], dim=0)
+
+        disc_loss = torch.nn.binary_cross_entropy_with_logits(preds, labels)
+
+        self.manual_backward(disc_loss)
+        opt_d.step()
+
+        self.log_dict({
+            'train_gen_loss': gen_loss,
+            'train_disc_loss': disc_loss,
+            'train_mse_loss': mse_loss,
+            'train_adv_loss': adv_loss,
+        }, prog_bar=True)
+
+        
     def validation_step(self, batch, batch_idx):
         inputs, mat = self.proc_batch(batch)
         fake = self(inputs)
