@@ -321,18 +321,14 @@ class GANModule(pl.LightningModule):
         return mse_loss
     
     def configure_optimizers(self):
-        opt_g = torch.optim.Adam(self.generator.parameters(), lr=4e-4)
-        opt_d = torch.optim.Adam(self.discriminator.parameters(), lr=4e-4)
-
-        # Get schedulers (they return dicts that include the 'optimizer' key)
+        opt_g = torch.optim.Adam(self.generator.parameters(), lr=1e-4)
         sched_g = LinearWarmupCosineAnnealingLR(opt_g, warmup_epochs=10, max_epochs=120)
+
+        opt_d = torch.optim.Adam(self.discriminator.parameters(), lr=1e-4)
         sched_d = LinearWarmupCosineAnnealingLR(opt_d, warmup_epochs=10, max_epochs=120)
 
-        # Explicitly remove the 'optimizer' key — required for manual optimization
-        sched_g_config = {k: v for k, v in sched_g.items() if k != 'optimizer'}
-        sched_d_config = {k: v for k, v in sched_d.items() if k != 'optimizer'}
-
-        return [opt_g, opt_d], [sched_g_config, sched_d_config]
+        # Return raw objects (manual optimization)
+        return [opt_g, opt_d], [sched_g, sched_d]
         
     def get_model(self, args):
         model_name = 'ConvTransModel' 
