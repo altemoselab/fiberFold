@@ -327,23 +327,13 @@ class GANModule(pl.LightningModule):
         scheduler_g = LinearWarmupCosineAnnealingLR(opt_g, warmup_epochs=10, max_epochs=120)
         scheduler_d = LinearWarmupCosineAnnealingLR(opt_d, warmup_epochs=10, max_epochs=120)
 
-        return {
-            "optimizer": [opt_g, opt_d],
-            "lr_scheduler": [
-                {
-                    "scheduler": scheduler_g,
-                    "interval": "epoch",
-                    "name": "gen_lr",
-                    "optimizer": opt_g
-                },
-                {
-                    "scheduler": scheduler_d,
-                    "interval": "epoch",
-                    "name": "disc_lr",
-                    "optimizer": opt_d
-                }
+        return (
+            [opt_g, opt_d],
+            [
+                {"scheduler": scheduler_g, "interval": "epoch", "name": "gen_lr", "optimizer": opt_g},
+                {"scheduler": scheduler_d, "interval": "epoch", "name": "disc_lr", "optimizer": opt_d}
             ]
-        }
+        )
 
     def get_model(self, args):
         model_name = 'ConvTransModel' 
