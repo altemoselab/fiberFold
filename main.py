@@ -280,6 +280,7 @@ class GANModule(pl.LightningModule):
             gen_loss = (self.lambda_adv * mse_loss) + ((1 - self.lambda_adv) * adv_loss)
 
             self.manual_backward(gen_loss)
+            torch.nn.utils.clip_grad_norm_(self.generator.parameters(), max_norm=1.0)
             opt_g.step()
 
             # ----------------------
@@ -329,8 +330,18 @@ class GANModule(pl.LightningModule):
         return {
             "optimizer": [opt_g, opt_d],
             "lr_scheduler": [
-                {"scheduler": scheduler_g, "interval": "epoch", "name": "gen_lr"},
-                {"scheduler": scheduler_d, "interval": "epoch", "name": "disc_lr"}
+                {
+                    "scheduler": scheduler_g,
+                    "interval": "epoch",
+                    "name": "gen_lr",
+                    "optimizer": opt_g
+                },
+                {
+                    "scheduler": scheduler_d,
+                    "interval": "epoch",
+                    "name": "disc_lr",
+                    "optimizer": opt_d
+                }
             ]
         }
 
