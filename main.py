@@ -79,7 +79,6 @@ def init_training(args):
     pl.seed_everything(args.run_seed, workers=True)
     pl_module = GANModule(args)
     pl_trainer = pl.Trainer(accelerator='gpu',strategy='ddp',
-                            gradient_clip_val=1,
                             logger = all_loggers,
                             callbacks = [early_stop_callback,
                                          checkpoint_callback,
