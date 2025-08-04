@@ -4,6 +4,7 @@ import argparse
 import numpy as np
 import pytorch_lightning as pl
 import pytorch_lightning.callbacks as callbacks
+from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
 
 import model_simple
 from allTrackDataset import GenomeDataset
@@ -164,7 +165,6 @@ class TrainModule(pl.LightningModule):
                                      lr = 4e-4,
                                      weight_decay = 0)
 
-        import pl_bolts
         scheduler = pl_bolts.optimizers.lr_scheduler.LinearWarmupCosineAnnealingLR(optimizer, 
             warmup_epochs=10, max_epochs=40)
         scheduler_config = {
@@ -217,6 +217,142 @@ class TrainModule(pl.LightningModule):
         ModelClass = getattr(model_simple, model_name)
         model = ModelClass(num_genomic_features, mid_hidden = 256)
         return model
+
+
+# TRAIN GAN 
+class GANModule(pl.LightningModule):
+    def __init__(self, args, lambda_adv=0.9):
+        super().__init__()
+        self.generator = self.get_model(args)
+        if args.ckpt is not None:
+            ckpt = torch.load(args.ckpt, map_location=self.device)
+            if 'state_dict' in ckpt:
+                pretrained_weights = {k.replace("model.", ""): v for k, v in ckpt['state_dict'].items() if "model." in k}
+                self.generator.load_state_dict(pretrained_weights, strict=False)
+            else:
+                self.generator.load_state_dict(ckpt, strict=False)
+            print(f"Loaded pretrained generator from: {args.ckpt}")
+
+
+        self.discriminator = model_simple.Discriminator()
+        self.args = args
+        self.lambda_adv = lambda_adv
+        self.save_hyperparameters()
+        self.automatic_optimization = False
+
+    def forward(self, x):
+        return self.generator(x)
+
+    def proc_batch(self, batch):
+        features, mat, _ = batch
+        return features, mat
+
+    def training_step(self, batch, batch_idx):
+        opt_g, opt_d = self.optimizers()
+        inputs, real = self.proc_batch(batch)
+
+        if self.current_epoch < 10:
+            # Warm-up: only update discriminator
+            fake = self.generator(inputs)
+            opt_d.zero_grad()
+            real_disc = self.discriminator(real.unsqueeze(1))
+            fake_disc = self.discriminator(fake.detach().unsqueeze(1))
+            labels = torch.cat([torch.ones_like(real_disc), torch.zeros_like(fake_disc)], dim=0)
+            preds = torch.cat([real_disc, fake_disc], dim=0)
+            disc_loss = F.binary_cross_entropy_with_logits(preds, labels)
+            self.manual_backward(disc_loss)
+            opt_d.step()
+            self.log('train_disc_loss', disc_loss, prog_bar=True)
+            
+
+
+        else:
+            fake = self.generator(inputs)
+            B, H, W = real.shape
+
+            # ----------------------
+            #  Generator step
+            # ----------------------
+            opt_g.zero_grad()
+
+            mse_loss = F.mse_loss(fake, real)
+            disc_out = self.discriminator(fake.unsqueeze(1))  # (B,1,H,W) → logits
+            adv_loss = F.binary_cross_entropy_with_logits(disc_out, torch.ones_like(disc_out))
+            gen_loss = (self.lambda_adv * mse_loss) + ((1 - self.lambda_adv) * adv_loss)
+
+            self.manual_backward(gen_loss)
+            opt_g.step()
+
+            # ----------------------
+            #  Discriminator step
+            # ----------------------
+            opt_d.zero_grad()
+
+            real_disc = self.discriminator(real.unsqueeze(1))
+            fake_disc = self.discriminator(fake.detach().unsqueeze(1))
+
+            labels = torch.cat([torch.ones_like(real_disc), torch.zeros_like(fake_disc)], dim=0)
+            preds = torch.cat([real_disc, fake_disc], dim=0)
+
+            disc_loss = self.discriminator.loss(preds, labels)
+
+            self.manual_backward(disc_loss)
+            opt_d.step()
+
+            self.log_dict({
+                'train_gen_loss': gen_loss,
+                'train_disc_loss': disc_loss,
+                'train_mse_loss': mse_loss,
+                'train_adv_loss': adv_loss,
+            }, prog_bar=True)
+
+    def validation_step(self, batch, batch_idx):
+        inputs, mat = self.proc_batch(batch)
+        outputs = self(inputs)
+        loss = F.mse_loss(outputs, mat)
+        self.log('val_loss', loss, prog_bar=True)
+        return loss
+
+    def configure_optimizers(self):
+        opt_g = torch.optim.Adam(self.generator.parameters(), lr=4e-4)
+        opt_d = torch.optim.Adam(self.discriminator.parameters(), lr=4e-4)
+
+        scheduler_g = LinearWarmupCosineAnnealingLR(opt_g, warmup_epochs=10, max_epochs=120)
+        scheduler_d = LinearWarmupCosineAnnealingLR(opt_d, warmup_epochs=10, max_epochs=120)
+
+        return {
+            "optimizer": [opt_g, opt_d],
+            "lr_scheduler": [
+                {"scheduler": scheduler_g, "interval": "epoch", "name": "gen_lr"},
+                {"scheduler": scheduler_d, "interval": "epoch", "name": "disc_lr"}
+            ]
+        }
+
+    def get_model(self, args):
+        model_name = 'ConvTransModel' 
+        num_genomic_features = int(args.n_feat)
+        ModelClass = getattr(model_simple, model_name)
+        model = ModelClass(num_genomic_features, mid_hidden = 256)
+        return model
+
+
+    def get_dataset(self, args, mode):
+        if mode == 'val':
+            return GenomeDataset(args.datasheet_val, args.ma_bw, args.mc_bw, args.ctcf, args.ctcf_dir, args.hic)
+        else:
+            return GenomeDataset(args.datasheet_train, args.ma_bw, args.mc_bw, args.ctcf, args.ctcf_dir, args.hic, shift=True)
+
+    def get_dataloader(self, args, mode):
+        dataset = self.get_dataset(args, mode)
+        return DataLoader(
+            dataset,
+            shuffle=(mode == 'train'),
+            batch_size=8,
+            num_workers=8,
+            pin_memory=True,
+            prefetch_factor=1,
+            persistent_workers=True
+        )
 
 if __name__ == '__main__':
     main()

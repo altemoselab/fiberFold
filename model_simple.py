@@ -66,6 +66,48 @@ class ConvTransModel(ConvModel):
             return x, attn_weights
         else:
             return x
+#GAN
+class Discriminator(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = nn.Conv2d(1, 32, 4, stride=1)
+        self.act1 = nn.ReLU()
+        self.pool1 = nn.MaxPool2d(2)
+
+        self.conv2 = nn.Conv2d(32, 64, 4, stride=1)
+        self.act2 = nn.ReLU()
+        self.pool2 = nn.MaxPool2d(2)
+
+        self.conv3 = nn.Conv2d(64, 64, 4, stride=1)
+        self.act3 = nn.ReLU()
+        self.pool3 = nn.MaxPool2d(2)
+
+        self.conv4 = nn.Conv2d(64, 64, 4, stride=1)
+        self.act4 = nn.ReLU()
+        self.fc1 = nn.Linear(256, 1)  # Adjust if shape is different
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.act1(x)
+        x = self.pool1(x)
+
+        x = self.conv2(x)
+        x = self.act2(x)
+        x = self.pool2(x)
+
+        x = self.conv3(x)
+        x = self.act3(x)
+        x = self.pool3(x)
+
+        x = self.conv4(x)
+        x = self.act4(x)
+        x = x.view(x.size(0), -1)  # NOTE: corrected from (1, -1) to (B, -1)
+        x = self.fc1(x)
+        return x
+
+    def loss(self, pred, label, reduction='mean'):
+        return F.binary_cross_entropy_with_logits(pred, label, reduction=reduction)
+
 
 
 if __name__ == '__main__':
