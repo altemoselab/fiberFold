@@ -308,10 +308,17 @@ class GANModule(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         inputs, mat = self.proc_batch(batch)
-        outputs = self(inputs)
-        loss = torch.nn.mse_loss(outputs, mat)
-        self.log('val_loss', loss, prog_bar=True)
-        return loss
+        fake = self(inputs)
+        mse_loss = torch.nn.functional.mse_loss(fake, mat)
+
+        # Adversarial signal: is the discriminator fooled?
+        fake_score = self.discriminator(fake.unsqueeze(1)).sigmoid().mean()
+
+        self.log_dict({
+            'val_mse_loss': mse_loss,
+            'val_disc_conf_fake': fake_score,
+        }, prog_bar=True)
+        return mse_loss
 
     def configure_optimizers(self):
         opt_g = torch.optim.Adam(self.generator.parameters(), lr=4e-4)
