@@ -77,14 +77,14 @@ def init_training(args):
     
     # Assign seed
     pl.seed_everything(args.run_seed, workers=True)
-    pl_module = TrainModule(args)
+    pl_module = GANModule(args)
     pl_trainer = pl.Trainer(accelerator='gpu',strategy='ddp',
                             gradient_clip_val=1,
                             logger = all_loggers,
                             callbacks = [early_stop_callback,
                                          checkpoint_callback,
                                          lr_monitor],
-                            max_epochs = 120) #fast_dev_run=True) # fast_dev_run to see if model will initialize, remove when running entire model
+                            max_epochs = 120, fast_dev_run=True) # fast_dev_run to see if model will initialize, remove when running entire model
 
     trainloader = pl_module.get_dataloader(args, 'train')
     valloader = pl_module.get_dataloader(args, 'val')
@@ -259,7 +259,7 @@ class GANModule(pl.LightningModule):
             fake_disc = self.discriminator(fake.detach().unsqueeze(1))
             labels = torch.cat([torch.ones_like(real_disc), torch.zeros_like(fake_disc)], dim=0)
             preds = torch.cat([real_disc, fake_disc], dim=0)
-            disc_loss = F.binary_cross_entropy_with_logits(preds, labels)
+            disc_loss = torch.nn.binary_cross_entropy_with_logits(preds, labels)
             self.manual_backward(disc_loss)
             opt_d.step()
             self.log('train_disc_loss', disc_loss, prog_bar=True)
@@ -275,9 +275,9 @@ class GANModule(pl.LightningModule):
             # ----------------------
             opt_g.zero_grad()
 
-            mse_loss = F.mse_loss(fake, real)
+            mse_loss = torch.nn.mse_loss(fake, real)
             disc_out = self.discriminator(fake.unsqueeze(1))  # (B,1,H,W) → logits
-            adv_loss = F.binary_cross_entropy_with_logits(disc_out, torch.ones_like(disc_out))
+            adv_loss = torch.nn.binary_cross_entropy_with_logits(disc_out, torch.ones_like(disc_out))
             gen_loss = (self.lambda_adv * mse_loss) + ((1 - self.lambda_adv) * adv_loss)
 
             self.manual_backward(gen_loss)
@@ -309,7 +309,7 @@ class GANModule(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         inputs, mat = self.proc_batch(batch)
         outputs = self(inputs)
-        loss = F.mse_loss(outputs, mat)
+        loss = torch.nn.mse_loss(outputs, mat)
         self.log('val_loss', loss, prog_bar=True)
         return loss
 
