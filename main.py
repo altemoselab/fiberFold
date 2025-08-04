@@ -319,22 +319,23 @@ class GANModule(pl.LightningModule):
             'val_disc_conf_fake': fake_score,
         }, prog_bar=True)
         return mse_loss
-
     def configure_optimizers(self):
         opt_g = torch.optim.Adam(self.generator.parameters(), lr=4e-4)
         opt_d = torch.optim.Adam(self.discriminator.parameters(), lr=4e-4)
 
-        scheduler_g = LinearWarmupCosineAnnealingLR(opt_g, warmup_epochs=10, max_epochs=120)
-        scheduler_d = LinearWarmupCosineAnnealingLR(opt_d, warmup_epochs=10, max_epochs=120)
+        scheduler_g = {
+            "scheduler": LinearWarmupCosineAnnealingLR(opt_g, warmup_epochs=10, max_epochs=120),
+            "interval": "epoch",
+            "name": "gen_lr"
+        }
+        scheduler_d = {
+            "scheduler": LinearWarmupCosineAnnealingLR(opt_d, warmup_epochs=10, max_epochs=120),
+            "interval": "epoch",
+            "name": "disc_lr"
+        }
 
-        return (
-            [opt_g, opt_d],
-            [
-                {"scheduler": scheduler_g, "interval": "epoch", "name": "gen_lr", "optimizer": opt_g},
-                {"scheduler": scheduler_d, "interval": "epoch", "name": "disc_lr", "optimizer": opt_d}
-            ]
-        )
-
+        return [opt_g, opt_d], [scheduler_g, scheduler_d]
+    
     def get_model(self, args):
         model_name = 'ConvTransModel' 
         num_genomic_features = int(args.n_feat)
