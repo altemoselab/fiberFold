@@ -341,7 +341,7 @@ class GANModule(pl.LightningModule):
         fake_score = self.discriminator(fake_crop.unsqueeze(1)).sigmoid().mean()
 
         self.log_dict({
-            'val_mse_loss': mse_loss,
+            'val_loss': mse_loss,
             'val_disc_conf_fake': fake_score,
         }, prog_bar=True)
         return mse_loss
