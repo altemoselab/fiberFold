@@ -258,11 +258,11 @@ class GANModule(pl.LightningModule):
                     fake = self.generator(inputs)  # fake: (B, 256, 256)
 
                 # Random diagonal-aligned crop index
-                    i = torch.randint(0, 256 - 64 + 1, (1,)).item()
+                i = torch.randint(0, 256 - 64 + 1, (1,)).item()
 
                 # Crop 64x64 along diagonal
-                    real_crop = real[:, i:i+64, i:i+64]      # (B, 64, 64)
-                    fake_crop = fake[:, i:i+64, i:i+64]      # (B, 64, 64)
+                real_crop = real[:, i:i+64, i:i+64]      # (B, 64, 64)
+                fake_crop = fake[:, i:i+64, i:i+64]      # (B, 64, 64)
 
 
                 real_disc = self.discriminator(real_crop.unsqueeze(1))           # (B, 1, 64, 64)
@@ -333,10 +333,13 @@ class GANModule(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         inputs, mat = self.proc_batch(batch)
         fake = self(inputs)
-        mse_loss = torch.nn.functional.mse_loss(fake, mat)
 
+        fake_crop = fake[:, i:i+64, i:i+64]
+
+        mse_loss = torch.nn.functional.mse_loss(fake, mat)
+        i = torch.randint(0, 256 - 64 + 1, (1,)).item()
         # Adversarial signal: is the discriminator fooled?
-        fake_score = self.discriminator(fake.unsqueeze(1)).sigmoid().mean()
+        fake_score = self.discriminator(fake_crop.unsqueeze(1)).sigmoid().mean()
 
         self.log_dict({
             'val_mse_loss': mse_loss,
