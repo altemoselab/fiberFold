@@ -83,7 +83,7 @@ def init_training(args):
                             callbacks = [early_stop_callback,
                                          checkpoint_callback,
                                          lr_monitor],
-                            max_epochs = 120, fast_dev_run = False) #to see if model will initialize, remove when running entire model
+                            max_epochs = 120, fast_dev_run = True) #to see if model will initialize, remove when running entire model
 
     trainloader = pl_module.get_dataloader(args, 'train')
     valloader = pl_module.get_dataloader(args, 'val')
@@ -380,8 +380,8 @@ class GANModule(pl.LightningModule):
             shuffle = False
         
         #### SET BATCH SIZE
-        batch_size = 8
-        num_workers = 8
+        batch_size = 1
+        num_workers = 2
 
 
         dataloader = torch.utils.data.DataLoader(
