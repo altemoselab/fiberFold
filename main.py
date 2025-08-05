@@ -88,7 +88,7 @@ def init_training(args):
     trainloader = pl_module.get_dataloader(args, 'train')
     valloader = pl_module.get_dataloader(args, 'val')
 
-    pl_trainer.fit(pl_module, trainloader, valloader, ckpt_path = args.ckpt)
+    pl_trainer.fit(pl_module, trainloader, valloader, ckpt_path = None)
 
 
 class TrainModule(pl.LightningModule):
