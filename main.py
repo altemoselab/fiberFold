@@ -334,10 +334,9 @@ class GANModule(pl.LightningModule):
         inputs, mat = self.proc_batch(batch)
         fake = self(inputs)
 
-        fake_crop = fake[:, i:i+64, i:i+64]
-
         mse_loss = torch.nn.functional.mse_loss(fake, mat)
         i = torch.randint(0, 256 - 64 + 1, (1,)).item()
+        fake_crop = fake[:, i:i+64, i:i+64]
         # Adversarial signal: is the discriminator fooled?
         fake_score = self.discriminator(fake_crop.unsqueeze(1)).sigmoid().mean()
 
