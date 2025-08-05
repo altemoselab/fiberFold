@@ -83,7 +83,7 @@ def init_training(args):
                             callbacks = [early_stop_callback,
                                          checkpoint_callback,
                                          lr_monitor],
-                            max_epochs = 120) # fast_dev_run to see if model will initialize, remove when running entire model
+                            max_epochs = 120, fast_dev_run = False) #to see if model will initialize, remove when running entire model
 
     trainloader = pl_module.get_dataloader(args, 'train')
     valloader = pl_module.get_dataloader(args, 'val')
@@ -345,10 +345,10 @@ class GANModule(pl.LightningModule):
         return mse_loss
     
     def configure_optimizers(self):
-        opt_g = torch.optim.Adam(self.generator.parameters(), lr=1e-4)
+        opt_g = torch.optim.Adam(self.generator.parameters(), lr=2e-4)
         sched_g = LinearWarmupCosineAnnealingLR(opt_g, warmup_epochs=10, max_epochs=120)
 
-        opt_d = torch.optim.Adam(self.discriminator.parameters(), lr=1e-4)
+        opt_d = torch.optim.Adam(self.discriminator.parameters(), lr=4e-4)
         sched_d = LinearWarmupCosineAnnealingLR(opt_d, warmup_epochs=10, max_epochs=120)
 
         # Return raw objects (manual optimization)
